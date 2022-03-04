@@ -1,0 +1,14 @@
+version: '3'
+services:
+  api:
+    image: python-docker
+    container_name: python-container
+    env_file:
+      - .env
+    ports:
+      - '8000:8000'
+  redis:
+    image: redis
+    container_name: redis-container
+    ports:
+      - "6379:6379"
