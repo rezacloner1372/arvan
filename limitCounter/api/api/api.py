@@ -1,13 +1,27 @@
+from flask import Flask, request, make_response
+from flask import jsonify
+from flask_limiter import Limiter
 import redis
-from http.client import OK
-from flask import Flask, request
+
+
+def get_client_key():
+    return request.headers.get('CLIENT-KEY')
 
 
 app = Flask(__name__)
+limiter = Limiter(app, key_func=get_client_key)
 
 
-redis_cache = redis.Redis(host='127.0.0.1', port=6379, db=0,
+redis_cache = redis.Redis(host='redis', port=6379, db=0,
                           password='redis', charset="utf-8", decode_responses=True)
+
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return make_response(
+        jsonify(
+            {"message": f"Too many request from {request.headers.get('CLIENT-KEY')}"}), 429
+    )
 
 
 number = 0
@@ -16,6 +30,7 @@ my_dict = {}
 
 
 @app.route('/', methods=['POST'])
+@limiter.limit('10/minute')
 def api_message():
     try:
         target = request.headers['CLIENT-KEY']
